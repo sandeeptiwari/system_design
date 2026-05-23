@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.rotatingmind.springtx'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Use the JUnit Jupiter BOM (aggregated artifact) for API + engine and convenience
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    // Ensure the JUnit Platform launcher is available on the test runtime classpath
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
