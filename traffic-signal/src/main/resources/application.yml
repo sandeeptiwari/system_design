@@ -1,0 +1,20 @@
+signal:
+  duration:
+    green: 3000
+    yellow: 500
+    red: 30000
+  perDirection:
+    NORTH:
+      green: 3500
+      yellow: 500
+      red: 3000
+
+controller:
+  algorithm: round-robin
+  directionOrder:
+    - NORTH
+    - EAST
+    - SOUTH
+    - WEST
+
+lightStatus: true

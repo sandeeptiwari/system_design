@@ -1,5 +1,6 @@
 rootProject.name = 'system_design'
 
-// Include the rate_limiter standalone module
 include(':rate_limiter')
-
+include(':ratingservice')
+include(':common')
+include 'traffic-signal'

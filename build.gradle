@@ -1,34 +1,50 @@
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '4.0.6'
-    id 'io.spring.dependency-management' version '1.1.7'
+    id 'base'
 }
 
-group = 'com.rotatingmind.springtx'
+group = 'com.rotatingmind'
 version = '0.0.1-SNAPSHOT'
 description = 'system_design'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+ext {
+    javaVersion = 25
+    junitVersion = '5.12.2'
+    junitPlatformVersion = '1.12.2'
+    mockitoVersion = '5.18.0'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
     }
 }
 
-repositories {
-    mavenCentral()
+subprojects {
+    apply plugin: 'java-library'
+
+    group = rootProject.group
+    version = rootProject.version
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(rootProject.ext.javaVersion)
+        }
+    }
+
+    dependencies {
+        testImplementation "org.junit.jupiter:junit-jupiter:${rootProject.ext.junitVersion}"
+        testRuntimeOnly "org.junit.platform:junit-platform-launcher:${rootProject.ext.junitPlatformVersion}"
+        testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoVersion}"
+        testImplementation "org.mockito:mockito-junit-jupiter:${rootProject.ext.mockitoVersion}"
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
 }
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-    testCompileOnly 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
+tasks.register('ratingserviceTest') {
+    group = 'verification'
+    description = 'Runs all ratingservice module tests'
+    dependsOn ':ratingservice:test'
 }

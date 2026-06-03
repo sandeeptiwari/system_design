@@ -1,4 +1,4 @@
-package com.rotatingmind.springtx.ratelimiter;
+package com.rotatingmind.design.ratelimiter;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,28 +1,52 @@
-plugins {
-    id 'java'
+dependencies {
+    implementation project(':common')
+
+    // JMH for microbenchmarks (manual sourceSet configuration)
+    implementation 'org.openjdk.jmh:jmh-core:1.37'
+    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
 }
 
-group = 'com.rotatingmind.springtx'
-version = '0.0.1-SNAPSHOT'
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+// Configure a 'jmh' source set so benchmarks live separately from unit tests
+sourceSets {
+    jmh {
+        java.srcDir file('src/jmh/java')
+        resources.srcDir file('src/jmh/resources')
+        compileClasspath += sourceSets.main.output + configurations.compileClasspath
+        runtimeClasspath += output + compileClasspath
     }
 }
 
-repositories {
-    mavenCentral()
+configurations {
+    jmhImplementation {
+        extendsFrom implementation
+    }
+    jmhAnnotationProcessor {
+        extendsFrom annotationProcessor
+    }
 }
 
 dependencies {
-    // Use the JUnit Jupiter BOM (aggregated artifact) for API + engine and convenience
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
-    // Ensure the JUnit Platform launcher is available on the test runtime classpath
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
+    // ensure annotation processor is available for the jmh source set
+    jmhImplementation 'org.openjdk.jmh:jmh-core:1.37'
+    jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
 }
 
-tasks.named('test') {
-    useJUnitPlatform()
+// Task to run JMH benchmarks directly
+tasks.register('jmhRun', JavaExec) {
+    group = 'benchmark'
+    description = 'Run JMH benchmarks in src/jmh/java'
+    classpath = sourceSets.jmh.runtimeClasspath
+    // use the modern mainClass property for JavaExec
+    mainClass.set('org.openjdk.jmh.Main')
+    // Allow passing JMH args via -PjmhArgs="-i 5 -wi 3 -f 1 -t 8 .*HighCardinality.*"
+    if (project.hasProperty('jmhArgs')) {
+        args project.property('jmhArgs').toString().split(' ')
+    }
+    // Allow passing JVM args for the benchmark JVM via -PjmhJvmArgs="-Xmx128m -Xms128m"
+    if (project.hasProperty('jmhJvmArgs')) {
+        def jmhJvm = project.property('jmhJvmArgs').toString().split(' ')
+        // setJvmArgs is the supported setter for JavaExec
+        setJvmArgs(jmhJvm as List)
+    }
 }
 

@@ -1,4 +1,4 @@
-package com.rotatingmind.springtx.ratelimiter;
+package com.rotatingmind.design.ratelimiter;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -24,11 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *      sliding-window counter with sub-windows, token bucket, or leaky bucket) reduce this
  *      burstiness at the cost of higher memory, CPU, or implementation complexity.
  *
- * 2) Memory growth and cleanup:
+ * '2) Memory growth and cleanup:'
  *    - This implementation keeps an entry in a ConcurrentHashMap for every key ever used. In a
  *      high-cardinality workload (lots of unique keys), memory will grow indefinitely.
  *    - Production systems should add eviction (e.g., TTL-based removal, periodic cleanup of
  *      stale entries, or use a bounded cache like Caffeine/Guava) to prevent OOM.
+ *
+ *      TL;DR — Replace the unbounded ConcurrentHashMap in RateLimiter with a bounded, time-aware cache (recommended: Caffeine)
+ *      or add a TTL-based cleanup thread. This prevents unbounded memory growth for high-cardinality keys while preserving per-key
+ *      concurrency and simple semantics.
  *
  * 3) Concurrency and contention:
  *    - Per-key synchronization is used (synchronized on the Window instance) so only threads
@@ -77,21 +81,7 @@ public class RateLimiter {
         this.windowMillis = window.toMillis();
     }
 
-    /**
-     * Try to acquire a permit for the given key. Returns true if allowed, false otherwise.
-     *
-     * Important implementation details and trade-offs:
-     * - The method obtains the current time once at the start. This time is used for window
-     *   expiry checks and counts. Using a single timestamp per call avoids repeated clock calls
-     *   and keeps the window semantics consistent inside the method.
-     * - We use computeIfAbsent to avoid races when creating the Window object. After getting the
-     *   Window reference we synchronize on it to mutate its fields. This keeps synchronization
-     *   local to the key while ensuring correct resets when the window expires.
-     * - Increment is done via AtomicInteger.incrementAndGet() inside the synchronized block. The
-     *   AtomicInteger is used because it provides clear semantics and can be used outside of
-     *   synchronization if refactoring later. The synchronized block ensures the window reset and
-     *   count increment happen atomically relative to other threads for the same key.
-     */
+
     public boolean tryAcquire(String key) {
         long now = System.currentTimeMillis();
         Window w = map.computeIfAbsent(key, k -> new Window(now));
